@@ -27,14 +27,30 @@
     <form id="form" class="space-y-4">
       <div>
         <label class="block text-sm text-zinc-300 mb-1">New Password</label>
-        <input id="password" type="password" placeholder="••••••••" minlength="8" required
-          class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-3 text-white placeholder-zinc-500 focus:outline-none focus:border-pink-500 transition" />
+        <div class="relative">
+          <input id="password" type="password" placeholder="••••••••" minlength="8" required
+            class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-3 pr-12 text-white placeholder-zinc-500 focus:outline-none focus:border-pink-500 transition" />
+          <button type="button" onclick="toggleVisibility('password', 'eye1')"
+            class="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-200 transition">
+            <svg id="eye1" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+            </svg>
+          </button>
+        </div>
         <p class="text-xs text-zinc-500 mt-1">At least 8 characters, including a number</p>
       </div>
       <div>
         <label class="block text-sm text-zinc-300 mb-1">Confirm Password</label>
-        <input id="confirm" type="password" placeholder="••••••••" minlength="8" required
-          class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-3 text-white placeholder-zinc-500 focus:outline-none focus:border-pink-500 transition" />
+        <div class="relative">
+          <input id="confirm" type="password" placeholder="••••••••" minlength="8" required
+            class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-3 pr-12 text-white placeholder-zinc-500 focus:outline-none focus:border-pink-500 transition" />
+          <button type="button" onclick="toggleVisibility('confirm', 'eye2')"
+            class="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-200 transition">
+            <svg id="eye2" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+            </svg>
+          </button>
+        </div>
       </div>
       <p id="error-msg" class="text-red-400 text-sm hidden"></p>
       <button type="submit" id="submit-btn"
@@ -79,6 +95,17 @@
     const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhlcWh0Y3JjZW1jaHpwdXZ2bWJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzNDIzODAsImV4cCI6MjA5NTkxODM4MH0.9vmhplJfWCSXFXoLvC3b6MKignbwcX0QHI_1pihWI9o";
 
     let accessToken = null;
+
+    function toggleVisibility(inputId, iconId) {
+      const input = document.getElementById(inputId);
+      const icon  = document.getElementById(iconId);
+      const show  = input.type === "password";
+      input.type  = show ? "text" : "password";
+      // Eye-off SVG when visible, eye SVG when hidden
+      icon.innerHTML = show
+        ? '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>'
+        : '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+    }
 
     function show(id) {
       ["loading", "reset-form", "success", "invalid"].forEach(s =>
