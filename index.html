@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reset Your Password — Inkkrystal</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <style>
+    body { background-color: #0f0f0f; font-family: 'Segoe UI', sans-serif; }
+  </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+  <!-- Loading -->
+  <div id="loading" class="text-center">
+    <div class="w-8 h-8 border-4 border-pink-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+  </div>
+
+  <!-- Reset Form -->
+  <div id="reset-form" class="hidden w-full max-w-md bg-zinc-900 rounded-2xl p-8 border border-zinc-800 shadow-2xl">
+    <div class="text-center mb-8">
+      <img src="https://heqhtcrcemchzpuvvmbz.supabase.co/storage/v1/object/public/email-assets/inkkrystal-logo.png?v=1"
+           alt="Inkkrystal" class="h-10 mx-auto mb-4" onerror="this.style.display='none'" />
+      <h1 class="text-2xl font-bold text-white">Reset Your Password</h1>
+      <p class="text-zinc-400 text-sm mt-1">Enter a new password for your Inkkrystal account</p>
+    </div>
+    <form id="form" class="space-y-4">
+      <div>
+        <label class="block text-sm text-zinc-300 mb-1">New Password</label>
+        <input id="password" type="password" placeholder="••••••••" minlength="8" required
+          class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-3 text-white placeholder-zinc-500 focus:outline-none focus:border-pink-500 transition" />
+        <p class="text-xs text-zinc-500 mt-1">At least 8 characters, including a number</p>
+      </div>
+      <div>
+        <label class="block text-sm text-zinc-300 mb-1">Confirm Password</label>
+        <input id="confirm" type="password" placeholder="••••••••" minlength="8" required
+          class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-3 text-white placeholder-zinc-500 focus:outline-none focus:border-pink-500 transition" />
+      </div>
+      <p id="error-msg" class="text-red-400 text-sm hidden"></p>
+      <button type="submit" id="submit-btn"
+        class="w-full bg-pink-600 hover:bg-pink-500 text-white font-semibold py-3 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed">
+        Update Password
+      </button>
+    </form>
+  </div>
+
+  <!-- Success -->
+  <div id="success" class="hidden w-full max-w-md bg-zinc-900 rounded-2xl p-8 border border-zinc-800 shadow-2xl text-center">
+    <div class="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
+      <svg class="w-8 h-8 text-green-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+      </svg>
+    </div>
+    <h1 class="text-2xl font-bold text-white mb-2">Password Updated!</h1>
+    <p class="text-zinc-400 text-sm mb-6">Your password has been changed. You can now log in to Inkkrystal with your new password.</p>
+    <a href="https://inkkrystal.com/auth"
+      class="inline-block w-full bg-pink-600 hover:bg-pink-500 text-white font-semibold py-3 rounded-lg transition text-center">
+      Go to Inkkrystal
+    </a>
+  </div>
+
+  <!-- Invalid / Expired -->
+  <div id="invalid" class="hidden w-full max-w-md bg-zinc-900 rounded-2xl p-8 border border-zinc-800 shadow-2xl text-center">
+    <div class="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
+      <svg class="w-8 h-8 text-red-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M12 3a9 9 0 100 18A9 9 0 0012 3z" />
+      </svg>
+    </div>
+    <h1 class="text-2xl font-bold text-white mb-2">Link Invalid or Expired</h1>
+    <p class="text-zinc-400 text-sm mb-6">This password reset link has expired or already been used. Please request a new one from the Inkkrystal app or website.</p>
+    <a href="https://inkkrystal.com/auth"
+      class="inline-block w-full bg-zinc-700 hover:bg-zinc-600 text-white font-semibold py-3 rounded-lg transition text-center">
+      Back to Inkkrystal
+    </a>
+  </div>
+
+  <script>
+    const SUPABASE_URL = "https://heqhtcrcemchzpuvvmbz.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhlcWh0Y3JjZW1jaHpwdXZ2bWJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzNDIzODAsImV4cCI6MjA5NTkxODM4MH0.9vmhplJfWCSXFXoLvC3b6MKignbwcX0QHI_1pihWI9o";
+
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    function show(id) {
+      ["loading", "reset-form", "success", "invalid"].forEach(s => {
+        document.getElementById(s).classList.add("hidden");
+      });
+      document.getElementById(id).classList.remove("hidden");
+    }
+
+    async function init() {
+      const params = new URLSearchParams(window.location.hash.substring(1));
+      const accessToken = params.get("access_token");
+      const refreshToken = params.get("refresh_token");
+      const type = params.get("type");
+      const errorCode = params.get("error_code");
+
+      if (errorCode || !accessToken || type !== "recovery") {
+        show("invalid");
+        return;
+      }
+
+      const { error } = await supabase.auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken || "",
+      });
+
+      if (error) {
+        show("invalid");
+        return;
+      }
+
+      show("reset-form");
+    }
+
+    document.getElementById("form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const password = document.getElementById("password").value;
+      const confirm = document.getElementById("confirm").value;
+      const errorMsg = document.getElementById("error-msg");
+      const btn = document.getElementById("submit-btn");
+
+      errorMsg.classList.add("hidden");
+
+      if (password !== confirm) {
+        errorMsg.textContent = "Passwords do not match.";
+        errorMsg.classList.remove("hidden");
+        return;
+      }
+
+      if (!/\d/.test(password)) {
+        errorMsg.textContent = "Password must include at least one number.";
+        errorMsg.classList.remove("hidden");
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = "Updating...";
+
+      const { error } = await supabase.auth.updateUser({ password });
+
+      if (error) {
+        errorMsg.textContent = error.message || "Failed to update password. Please try again.";
+        errorMsg.classList.remove("hidden");
+        btn.disabled = false;
+        btn.textContent = "Update Password";
+      } else {
+        show("success");
+      }
+    });
+
+    init();
+  </script>
+</body>
+</html>
