@@ -79,7 +79,14 @@
     const SUPABASE_URL = "https://heqhtcrcemchzpuvvmbz.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhlcWh0Y3JjZW1jaHpwdXZ2bWJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzNDIzODAsImV4cCI6MjA5NTkxODM4MH0.9vmhplJfWCSXFXoLvC3b6MKignbwcX0QHI_1pihWI9o";
 
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    // detectSessionInUrl: false — we handle the hash manually so Supabase
+    // doesn't race against our init() and clear the hash before we read it
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: {
+        detectSessionInUrl: false,
+        persistSession: false,
+      }
+    });
 
     function show(id) {
       ["loading", "reset-form", "success", "invalid"].forEach(s => {
@@ -89,28 +96,31 @@
     }
 
     async function init() {
-      const params = new URLSearchParams(window.location.hash.substring(1));
-      const accessToken = params.get("access_token");
-      const refreshToken = params.get("refresh_token");
-      const type = params.get("type");
-      const errorCode = params.get("error_code");
+      try {
+        const params = new URLSearchParams(window.location.hash.substring(1));
+        const errorCode = params.get("error_code");
+        const accessToken = params.get("access_token");
+        const refreshToken = params.get("refresh_token") || "";
+        const type = params.get("type");
 
-      if (errorCode || !accessToken || type !== "recovery") {
+        if (errorCode || !accessToken || type !== "recovery") {
+          show("invalid");
+          return;
+        }
+
+        const { data, error } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+        });
+
+        if (error || !data.session) {
+          show("invalid");
+        } else {
+          show("reset-form");
+        }
+      } catch (e) {
         show("invalid");
-        return;
       }
-
-      const { error } = await supabase.auth.setSession({
-        access_token: accessToken,
-        refresh_token: refreshToken || "",
-      });
-
-      if (error) {
-        show("invalid");
-        return;
-      }
-
-      show("reset-form");
     }
 
     document.getElementById("form").addEventListener("submit", async (e) => {
