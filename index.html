@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Reset Your Password — Inkkrystal</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <style>
     body { background-color: #0f0f0f; font-family: 'Segoe UI', sans-serif; }
   </style>
@@ -76,59 +75,39 @@
   </div>
 
   <script>
-    const SUPABASE_URL = "https://heqhtcrcemchzpuvvmbz.supabase.co";
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhlcWh0Y3JjZW1jaHpwdXZ2bWJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzNDIzODAsImV4cCI6MjA5NTkxODM4MH0.9vmhplJfWCSXFXoLvC3b6MKignbwcX0QHI_1pihWI9o";
+    const SUPABASE_URL  = "https://heqhtcrcemchzpuvvmbz.supabase.co";
+    const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhlcWh0Y3JjZW1jaHpwdXZ2bWJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzNDIzODAsImV4cCI6MjA5NTkxODM4MH0.9vmhplJfWCSXFXoLvC3b6MKignbwcX0QHI_1pihWI9o";
 
-    // detectSessionInUrl: false — we handle the hash manually so Supabase
-    // doesn't race against our init() and clear the hash before we read it
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      auth: {
-        detectSessionInUrl: false,
-        persistSession: false,
-      }
-    });
+    let accessToken = null;
 
     function show(id) {
-      ["loading", "reset-form", "success", "invalid"].forEach(s => {
-        document.getElementById(s).classList.add("hidden");
-      });
+      ["loading", "reset-form", "success", "invalid"].forEach(s =>
+        document.getElementById(s).classList.add("hidden")
+      );
       document.getElementById(id).classList.remove("hidden");
     }
 
-    async function init() {
-      try {
-        const params = new URLSearchParams(window.location.hash.substring(1));
-        const errorCode = params.get("error_code");
-        const accessToken = params.get("access_token");
-        const refreshToken = params.get("refresh_token") || "";
-        const type = params.get("type");
+    function init() {
+      const params    = new URLSearchParams(window.location.hash.substring(1));
+      const errorCode = params.get("error_code");
+      const token     = params.get("access_token");
+      const type      = params.get("type");
 
-        if (errorCode || !accessToken || type !== "recovery") {
-          show("invalid");
-          return;
-        }
-
-        const { data, error } = await supabase.auth.setSession({
-          access_token: accessToken,
-          refresh_token: refreshToken,
-        });
-
-        if (error || !data.session) {
-          show("invalid");
-        } else {
-          show("reset-form");
-        }
-      } catch (e) {
+      if (errorCode || !token || type !== "recovery") {
         show("invalid");
+        return;
       }
+
+      accessToken = token;
+      show("reset-form");
     }
 
     document.getElementById("form").addEventListener("submit", async (e) => {
       e.preventDefault();
-      const password = document.getElementById("password").value;
-      const confirm = document.getElementById("confirm").value;
-      const errorMsg = document.getElementById("error-msg");
-      const btn = document.getElementById("submit-btn");
+      const password  = document.getElementById("password").value;
+      const confirm   = document.getElementById("confirm").value;
+      const errorMsg  = document.getElementById("error-msg");
+      const btn       = document.getElementById("submit-btn");
 
       errorMsg.classList.add("hidden");
 
@@ -137,25 +116,40 @@
         errorMsg.classList.remove("hidden");
         return;
       }
-
       if (!/\d/.test(password)) {
         errorMsg.textContent = "Password must include at least one number.";
         errorMsg.classList.remove("hidden");
         return;
       }
 
-      btn.disabled = true;
+      btn.disabled    = true;
       btn.textContent = "Updating...";
 
-      const { error } = await supabase.auth.updateUser({ password });
+      try {
+        const res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+          method:  "PUT",
+          headers: {
+            "Content-Type":  "application/json",
+            "Authorization": `Bearer ${accessToken}`,
+            "apikey":        SUPABASE_ANON,
+          },
+          body: JSON.stringify({ password }),
+        });
 
-      if (error) {
-        errorMsg.textContent = error.message || "Failed to update password. Please try again.";
+        if (res.ok) {
+          show("success");
+        } else {
+          const err = await res.json().catch(() => ({}));
+          errorMsg.textContent = err.message || "Failed to update password. Please try again.";
+          errorMsg.classList.remove("hidden");
+          btn.disabled    = false;
+          btn.textContent = "Update Password";
+        }
+      } catch (err) {
+        errorMsg.textContent = "Network error. Please check your connection and try again.";
         errorMsg.classList.remove("hidden");
-        btn.disabled = false;
+        btn.disabled    = false;
         btn.textContent = "Update Password";
-      } else {
-        show("success");
       }
     });
 
